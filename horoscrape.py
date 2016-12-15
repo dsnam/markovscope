@@ -1,4 +1,4 @@
-#modified to actually work without memory issues from travisriddle.com/Scraping-Horoscopes
+#modified to work without memory issues from travisriddle.com/Scraping-Horoscopes
 #This scrapes a ton of horoscopes from the NY Post site.
 #
 #Alexander Dodson
