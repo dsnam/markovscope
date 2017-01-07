@@ -6,10 +6,12 @@ Markov Chains and a bunch of data from the NY Post. Data is about 3 years
 of horoscopes for each sign and can be found in the csv file.
 
 If you want to generate a horoscope, make sure you have states.txt and 
-markovscope.py in the same place and run python markovscope.py <sign>
+markovscope.py in the same place and run:
+```python markovscope.py <sign>```
 
-Results vary as you would expect. Here is a half decent example that was 
-actually the first one generated:
+Results vary as you would expect. Here an example that was 
+actually the first one generated. Parts of it make sense, but a better model for text
+generation is clearly needed.
 
 python markovscope.py taurus
 What happens over the next seven days is a very small risk. Before you 
