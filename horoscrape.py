@@ -40,7 +40,7 @@ def parse_horos(sign):
     soup.decompose()
     page.close()  
   df = pd.DataFrame({'horoscope' : text, 'zodiac' : z_sign, 'pub_date' : pub_date})
-  df.to_csv('horoscopes.csv',mode='a',header=False,sep='|',encoding='utf-8')
+  df.to_csv('data/horoscopes.csv',mode='a',header=False,sep='|',encoding='utf-8')
   gc.collect()
   
 for sign in signs:

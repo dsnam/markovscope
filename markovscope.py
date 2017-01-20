@@ -7,7 +7,7 @@ import sys
 import random
 
 sign = sys.argv[-1]
-with open('states.txt') as data:
+with open('data/states.txt') as data:
   all_states = pickle.loads(data.read())
 
 start_states = [x for x in all_states[sign] if x[0] == '_S_']
