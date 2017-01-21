@@ -55,7 +55,7 @@ model.add(Dense(y.shape[1],activation='softmax'))
 
 if os.path.exists(weight_file):
   model.load_weights(weight_file)
-  model.compile(loss='categorical_crossentropy',optimizer='adam'
+  model.compile(loss='categorical_crossentropy',optimizer='adam')
 else:
   fp = 'weights-{epoch:02d}-{loss:.4f}-bigger.hdf5'
   checkpoint =ModelCheckpoint(fp,monitor='loss',verbose=1,save_best_only=True,mode='min')
