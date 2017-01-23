@@ -33,9 +33,8 @@ def process():
   for h in horos:
     while len(h) < max_len:
       h.append('=')
-    while len(h) > max_len:
-      h = h[:-1]
-  max_lea = max(len(h) for h in horos)
+    if len(h) > max_len:
+      h = h[:max_len]
   print 'max_len',max_len
   return (horos,words,word_to_idx,idx_to_word,max_len)
 
