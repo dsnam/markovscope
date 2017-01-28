@@ -12,7 +12,10 @@ from preproc_rnn import process
 import sys,random,os
 
 #specify a weights file to just generate without training
-weight = 'weights/'+sys.argv[-1]
+weight_file = 'weights/'+sys.argv[-1]
+
+#specify sequence length
+seq_length = 10
 
 def sample(a,temp=1.0):
   a = np.log(a) / temp
@@ -22,46 +25,41 @@ def sample(a,temp=1.0):
 def get_seed(seqs):
   return seqs[random.randint(0,len(seqs))]
 
+def data_gen(batch_size):
+  X = np.zeros((batch_size,seq_length-1,len(words)))
+  y = np.zeros((batch_size,len(words)))
+  batch = 0
+  for i in xrange(len(sequences)):
+    batchIdx = i%batch_size
+    X[batchIdx] = sequences[i]
+    y[batchIdx] = next_words[i]
+    if batchIdx == 0 and i != 0:
+      batch += 1
+      print 'batch:',batch
+      yield (X,y)
+
 #process the data
-horos,words,word_to_idx,idx_to_word,max_len = process()
-step = 5
-max_len = 30
-
-#transform the data into sequences, create seq:next pairs, vectorize
-next_words = []
-seqs = []
-for h in horos[:len(horos)/4]:
-  for i in xrange(0,len(h)-max_len,step):
-    seq = h[i:i+step]
-    seqs.append(seq)
-    next_words.append((h[i+step]))
-print len(seqs)
-
-X = np.zeros((len(seqs),max_len,len(words)),dtype=np.bool)
-y = np.zeros((len(seqs),len(words)),dtype=np.bool)
-
-for i,seq in enumerate(seqs):
-  for j,w in enumerate(seq):
-    X[i,j,word_to_idx[w]] = 1
-  y[i,word_to_idx[next_words[i]]] = 1
-
+sequences,next_words,words,word_to_idx,idx_to_word = process(seq_length)
+sequences = sequences[:500001]
+next_words = next_words[:50000]
+#data_gen(1).next()
 #set up model
 model = Sequential()
-model.add(LSTM(256,input_shape=(max_len,len(words)),return_sequences=True))
+model.add(LSTM(256,input_shape=(seq_length-1,len(words)),return_sequences=True))
 model.add(Dropout(.2))
 model.add(LSTM(256))
 model.add(Dropout(.2))
-model.add(Dense(y.shape[1],activation='softmax'))
+model.add(Dense(len(words),activation='softmax'))
 
 if os.path.exists(weight_file):
   model.load_weights(weight_file)
   model.compile(loss='categorical_crossentropy',optimizer='adam')
 else:
   fp = 'weights-{epoch:02d}-{loss:.4f}-bigger.hdf5'
-  checkpoint =ModelCheckpoint(fp,monitor='loss',verbose=1,save_best_only=True,mode='min')
+  checkpoint = ModelCheckpoint(fp,monitor='loss',verbose=1,save_best_only=True,mode='min')
   callbacks_list = [checkpoint]
   model.compile(loss='categorical_crossentropy',optimizer='adam')
-  model.fit(X,y,batch_size=256,nb_epoch=5,callbacks=callbacks_list)
+  model.fit_generator(data_gen(500),samples_per_epoch=len(sequences),nb_epoch=5,callbacks=callbacks_list)
 
 
 #generate text using sequences from the data as seeds
