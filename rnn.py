@@ -29,19 +29,21 @@ def data_gen(batch_size):
   X = np.zeros((batch_size,seq_length-1,len(words)))
   y = np.zeros((batch_size,len(words)))
   batch = 0
-  for i in xrange(len(sequences)):
-    batchIdx = i%batch_size
-    X[batchIdx] = sequences[i]
-    y[batchIdx] = next_words[i]
-    if batchIdx == 0 and i != 0:
-      batch += 1
-      print 'batch:',batch
-      yield (X,y)
+  while 1:
+    for i in xrange(len(sequences)):
+      batchIdx = i%batch_size
+      for j in xrange(seq_length-1):
+	X[batchIdx,j,sequences[i][j]] = 1
+      y[batchIdx,next_words[i]] = 1
+      if batchIdx == 0 and i != 0:
+	batch += 1
+	print 'batch:',batch
+	yield (X,y)
 
 #process the data
 sequences,next_words,words,word_to_idx,idx_to_word = process(seq_length)
 sequences = sequences[:500001]
-next_words = next_words[:50000]
+next_words = next_words[:500001]
 #data_gen(1).next()
 #set up model
 model = Sequential()
