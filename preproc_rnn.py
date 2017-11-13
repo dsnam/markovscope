@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import re
-#from keras.preprocessing.text import Tokenizer
+import numpy as np
+from keras.utils import np_utils
 
 def get_sequences(s,length):
-  for i in range(len(s)-length):
+  for i in range(len(s)-length+1):
     yield [s[i+j] for j in range(length)]
 
 def process(seq_length):
@@ -18,10 +19,19 @@ def process(seq_length):
     if type(s) == type('.'):
       for p in patterns:
         s = re.sub(p[0],p[1],s)
-      for seq in get_sequences(s.lower().split(),seq_length):
+      s = s.lower().split()
+      s.insert(0,'_S_')
+      ends = []
+      for i in range(len(s)):
+        if s[i] == '.':
+          ends.append(i)
+      for e in reversed(ends):
+        s.insert(e+1,'_E_')
+        s.insert(e+2,'_S_')
+      for seq in get_sequences(s[:-1],seq_length):
         sequences.append(seq[:-1])
         next_words.append(seq[-1])
-        words = words.union(set(s.lower().split()))
+        words = words.union(set(s))
       
   print('words: ',len(words))
   print('seqs: ',len(sequences))
@@ -33,6 +43,8 @@ def process(seq_length):
     for j in range(len(sequences[i])):
       sequences[i][j] = word_to_idx[sequences[i][j]]
     next_words[i] = word_to_idx[next_words[i]]
-
-  return (sequences,next_words,words,word_to_idx,idx_to_word)
+  X = np.reshape(sequences,(len(sequences),seq_length-1,1))
+  X = X / len(words)
+  y = np_utils.to_categorical(next_words)
+  return (X,y,sequences,next_words,words,word_to_idx,idx_to_word)
 

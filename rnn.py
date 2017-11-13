@@ -1,21 +1,22 @@
 import numpy as np
 import pandas as pd
+import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import learn
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
 from keras.layers import LSTM
+from keras.layers import Flatten
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint
 from preproc_rnn import process
 import sys,random,os
 
 #specify a weights file to just generate without training
-weight_file = 'weights/'+sys.argv[-1]
-
+weight_file = sys.argv[-1]
 #specify sequence length
-seq_length = 10
+seq_length = 4
 
 def sample(a,temp=1.0):
   a = np.log(a) / temp
@@ -30,30 +31,29 @@ def data_gen(batch_size):
   y = np.zeros((batch_size,len(words)))
   batch = 0
   while 1:
-    for i in xrange(len(sequences)):
+    for i in range(len(sequences)):
       batchIdx = i%batch_size
-      for j in xrange(seq_length-1):
-	X[batchIdx,j,sequences[i][j]] = 1
+      for j in range(seq_length-1):
+        X[batchIdx,j,sequences[i][j]] = 1
       y[batchIdx,next_words[i]] = 1
       if batchIdx == 0 and i != 0:
-	batch += 1
-	print 'batch:',batch
-	yield (X,y)
+        batch += 1
+        print('batch:',batch)
+        yield (X,y)
 
 #process the data
-sequences,next_words,words,word_to_idx,idx_to_word = process(seq_length)
-sequences = sequences[:500001]
-next_words = next_words[:500001]
-#data_gen(1).next()
+X,y,sequences,next_words,words,word_to_idx,idx_to_word = process(seq_length)
+
 #set up model
 model = Sequential()
-model.add(LSTM(256,input_shape=(seq_length-1,len(words)),return_sequences=True))
+model.add(LSTM(256,input_shape=(X.shape[1],X.shape[2]),return_sequences=True))
 model.add(Dropout(.2))
 model.add(LSTM(256))
 model.add(Dropout(.2))
-model.add(Dense(len(words),activation='softmax'))
+#model.add(Flatten())
+model.add(Dense(y.shape[1],activation='softmax'))
 
-if os.path.exists(weight_file):
+if weight_file[-4:] == 'hdf5':
   model.load_weights(weight_file)
   model.compile(loss='categorical_crossentropy',optimizer='adam')
 else:
@@ -61,24 +61,22 @@ else:
   checkpoint = ModelCheckpoint(fp,monitor='loss',verbose=1,save_best_only=True,mode='min')
   callbacks_list = [checkpoint]
   model.compile(loss='categorical_crossentropy',optimizer='adam')
-  model.fit_generator(data_gen(500),samples_per_epoch=len(sequences),nb_epoch=5,callbacks=callbacks_list)
+  model.fit(X,y,epochs=30,batch_size=128,callbacks=callbacks_list)
 
 
 #generate text using sequences from the data as seeds
-seed = get_seed(seqs)
-
-generated = ''
-generated += ' '.join(seed)
-print 'seed: ',seed
-for i in range(30):
-  x = np.zeros((1,max_len,len(words)))
-  for t,word in enumerate(seed):
-    x[0,t,word_to_idx[word]] = 1.
-    preds = model.predict(x,verbose=0)[0]
-    next_idx = np.argmax(preds)
-    next_word = idx_to_word[next_idx]
-    generated += ' '+next_word
-    del seed[0]
-    seed.append(next_word)
-    
-print generated 
+#seed = get_seed(sequences)
+seed = sequences[np.random.randint(0,len(sequences)-1)]
+generated = []
+print('seed: ',seed)
+for i in range(50):
+  x = np.reshape(seed,(1,len(seed),1))
+  x = x / float(len(words))
+  pred = model.predict(x,verbose=0)
+  idx = np.argmax(pred)
+  result = idx_to_word[idx]
+  generated.append(result)
+  seed.append(idx)
+  seed = seed[1:len(seed)]
+      
+print(generated)
